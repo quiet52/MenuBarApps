@@ -57,7 +57,7 @@
 
 ### 📥 下载与安装
 
-1. 从 [Releases 页面](../../releases) 下载最新的 `MenuBarApps-v1.1.zip`；
+1. 从 [Releases 页面](../../releases) 下载最新的 `MenuBarApps-v1.2.zip`；
 2. 解压后将 `MenuBarApps.app` 拖移至系统 **“访达 -> 应用程序 (Applications)”**；
 3. **首次打开**：按住 `Control` 键点击应用图标，选择 **“打开”**，然后点击 **“仍要打开”** 即可。
 
@@ -106,6 +106,28 @@ On macOS (especially on MacBooks with camera notches), the menu bar easily runs 
 
 ---
 
+### 📥 Download & Installation
+
+1. Download `MenuBarApps-v1.2.zip` from [Releases](../../releases);
+2. Unzip and drag `MenuBarApps.app` to your `/Applications` folder;
+3. **First launch**: Right-click (or Control-click) `MenuBarApps.app`, select **Open**, and click **Open Anyway**.
+
+---
+
+### 🛠️ Build from Source
+
+```bash
+# Clone the repository
+git clone https://github.com/quiet52/MenuBarApps.git
+cd MenuBarApps
+
+# Build and package
+./build.sh
+```
+
+---
+
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
+
