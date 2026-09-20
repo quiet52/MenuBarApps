@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Xcode / SPM Build Artifacts
+.build/
+Packages/
+Package.pins
+Package.resolved
+*.xcodeproj
+*.xcworkspace
+.swiftpm/
+
+# App Bundles & Archives
+*.app/
+*.zip
+*.dmg
+AppIcon.iconset/
+MenuBarApps_副本.app/
+
+# User-specific
+xcuserdata/
+DerivedData/
