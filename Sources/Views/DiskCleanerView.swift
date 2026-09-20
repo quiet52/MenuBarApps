@@ -9,6 +9,15 @@ public struct DiskCleanerView: View {
     }
     
     public var body: some View {
+        if let detailItem = service.activeDetailItem {
+            DiskItemDetailView(service: service, item: detailItem)
+        } else {
+            mainListView
+        }
+    }
+    
+    // MARK: - 主列表视图
+    private var mainListView: some View {
         VStack(spacing: 0) {
             // 1. 顶部总览大卡片
             overviewHeader
@@ -100,7 +109,7 @@ public struct DiskCleanerView: View {
     
     // MARK: - 缓存单行卡片
     private func cacheRowView(for item: CleanerItem) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             // 复选框
             Button(action: {
                 service.toggleSelection(for: item.id)
@@ -122,31 +131,49 @@ public struct DiskCleanerView: View {
                     .foregroundColor(.primary)
             }
             
-            // 描述
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.title)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                
-                Text(item.subtitle)
-                    .font(.system(size: 9))
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+            // 描述与名称（点击可直接下钻查看明细）
+            Button(action: {
+                service.openDetail(for: item)
+            }) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.title)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
+                    Text(item.subtitle)
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             
             Spacer()
             
             // 大小标签
             Text(item.sizeString)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
                 .foregroundColor(
                     item.sizeBytes > 500 * 1024 * 1024 ? .orange : .primary
                 )
-                .padding(.horizontal, 6)
+                .padding(.horizontal, 5)
                 .padding(.vertical, 2)
                 .background(Color(nsColor: .controlBackgroundColor))
                 .cornerRadius(4)
+            
+            // 详情下钻小箭头
+            Button(action: {
+                service.openDetail(for: item)
+            }) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.secondary)
+                    .padding(.leading, 2)
+            }
+            .buttonStyle(.plain)
+            .help("查看明细与在访达中显示")
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 7)

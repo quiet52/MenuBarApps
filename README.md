@@ -52,6 +52,7 @@
   * **🔨 开发者编译构建中间件**：Xcode `DerivedData`、Swift 项目 `.build`、Python `__pycache__`；
   * **🎙️ 音视频临时工程**：AI 语音转写切片、剪辑临时工程缓存。
 * 🛡️ **一键安全释放**：精确计算选中的可清理体积，一键清理并保持应用目录无害重置。
+* 🔍 **透明下钻与访达联动 (Detail Drill-down & Finder)**：点击任意项目右侧 `›` 即可无缝进入明细面板，查看绝对物理路径、100% 安全原理解释以及体积最大的具体子文件/子目录；支持一键在访达中定位并打开，亦可在此单独清理该项。
 
 ---
 
@@ -103,6 +104,7 @@ On macOS (especially on MacBooks with camera notches), the menu bar easily runs 
   * Developer build directories (Xcode `DerivedData`, Swift `.build`, `__pycache__`)
   * Media processing temporary chunks
 * 🛡️ **One-Click Clean**: Reclaims gigabytes of disk storage with instant feedback.
+* 🔍 **Transparent Drill-down & Finder Integration**: Click `›` on any item to view its absolute path, safety rationale, and top largest files/subfolders; open directly in Finder or clean individually.
 
 ---
 
