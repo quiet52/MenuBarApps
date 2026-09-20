@@ -3,6 +3,20 @@ import SwiftUI
 import Combine
 import Darwin
 
+public enum NavigationTab: String, CaseIterable, Identifiable {
+    case apps = "应用管理"
+    case cleaner = "磁盘清理"
+    
+    public var id: String { rawValue }
+    
+    public var iconName: String {
+        switch self {
+        case .apps: return "app.dashed"
+        case .cleaner: return "sparkles"
+        }
+    }
+}
+
 public enum AppCategory: String, CaseIterable, Identifiable {
     case all = "全部"
     case accessory = "菜单栏"
@@ -12,6 +26,7 @@ public enum AppCategory: String, CaseIterable, Identifiable {
 }
 
 public final class AppManager: ObservableObject {
+    @Published public var selectedTab: NavigationTab = .apps
     @Published public var runningApps: [AppItem] = []
     @Published public var recentApps: [AppItem] = []
     @Published public var searchText: String = ""
@@ -174,19 +189,15 @@ public final class AppManager: ObservableObject {
         self.runningApps = running
         self.recentApps = recent
         self.ignoredBundleIds = Array(FilterRules.shared.ignoredBundleIds)
-        
-        // 自动清理已经不在运行列表的退出状态标记
         self.quittingAppIds.formIntersection(runningIds)
     }
     
     public func activateApp(_ item: AppItem) {
-        // 1. 视觉高亮即时反馈
         openingAppIds.insert(item.id)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             self?.openingAppIds.remove(item.id)
         }
         
-        // 2. 解除隐藏并激活
         if let pid = item.pid,
            let app = NSRunningApplication(processIdentifier: pid) {
             app.unhide()
@@ -196,7 +207,6 @@ public final class AppManager: ObservableObject {
             app.activate(options: [.activateIgnoringOtherApps])
         }
         
-        // 3. 唤醒并置顶
         if let url = item.bundleURL {
             let config = NSWorkspace.OpenConfiguration()
             config.activates = true
@@ -212,9 +222,7 @@ public final class AppManager: ObservableObject {
     }
     
     public func quitApp(_ item: AppItem, force: Bool = false) {
-        // 1. 视觉即刻置灰反馈
         quittingAppIds.insert(item.id)
-        
         HistoryStore.shared.recordQuit(item: item)
         
         var targetApp: NSRunningApplication?
@@ -241,7 +249,6 @@ public final class AppManager: ObservableObject {
     public func restartApp(_ item: AppItem) {
         guard let url = item.bundleURL else { return }
         
-        // 1. 旋转动效即刻触发
         restartingAppIds.insert(item.id)
         HistoryStore.shared.recordQuit(item: item)
         

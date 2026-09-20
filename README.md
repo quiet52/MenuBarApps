@@ -2,11 +2,11 @@
   <img src="assets/app_icon.png" width="128" height="128" alt="MenuBarApps Icon">
 </p>
 
-<h1 align="center">MenuBarApps (菜单栏应用管家)</h1>
+<h1 align="center">MenuBarApps (菜单栏应用与磁盘管家)</h1>
 
 <p align="center">
-  <strong>一款专为解决 macOS 屏幕右上角图标拥挤、刘海屏遮挡问题打造的原生超轻量应用管理工具。</strong><br>
-  <em>A lightweight native macOS menu bar & running application manager.</em>
+  <strong>一款专为解决 macOS 屏幕右上角图标拥挤、内存膨胀与无用缓存堆积打造的原生超轻量管家。</strong><br>
+  <em>A lightweight native macOS menu bar, running app & disk cache cleaner.</em>
 </p>
 
 <p align="center">
@@ -27,32 +27,31 @@
 
 ### 💡 为什么需要 MenuBarApps？
 
-在 macOS 上，随着安装的菜单栏辅助工具（如剪贴板、网盘同步、系统监控、各类代理等）增多，尤其是在配备**“刘海屏”**的 MacBook 上，屏幕右上角的状态栏空间极易被撑满。这会导致排在后面的应用被硬生生遮挡或挤出屏幕，用户**既不知道哪些程序在后台常驻运行，也无法右键退出它们**。
+在 macOS 上，随着安装的菜单栏辅助工具增多（尤其在**刘海屏 MacBook** 上），屏幕右上角状态栏极易被撑满，导致后面的应用被遮挡或挤出屏幕，用户**既不知道哪些程序在后台常驻运行，也无法右键退出它们**。
 
-此外，很多常驻小工具（如 Maccy、Stats 等）运行一段时间后常会出现内存膨胀（吃掉几百兆物理内存），而传统方式只能手动退出再重新找出来打开。
+此外，长期使用的 Mac 往往在后台堆积了大量无用缓存（Chrome 媒体缓存几 G、Homebrew 安装包几百兆、项目编译构建件几十 G），而传统磁盘工具只按大小排序，用户不敢轻易下手。
 
-**MenuBarApps** 就是为了彻底解决这一痛点而生的纯粹工具。
+**MenuBarApps** 将 **「后台应用管理」** 与 **「智能白名单磁盘清理」** 合二为一，用极简的单图标与快捷键，同时搞定**物理内存监控、进程调度与磁盘瘦身**。
 
 ---
 
 ### ✨ 核心功能特性
 
+#### 1. 📱 应用管理 (App Management)
 * ⚡ **极简常驻，数字角标**：在菜单栏仅占用单图标位，实时小字显示当前运行的后台辅助应用总数（如 ` 5`）。
-* ⌨️ **全局快捷键一键唤出**：默认支持 `Option + Shift + A` (`⌥⇧A`)，即便菜单栏图标被挤出视野，也可随时在屏幕居中呼出浮窗。
-* 🔍 **智能分类与快速搜索**：
-  * 自动区分 **「菜单栏应用」**（无 Dock 图标的后台工具）与 **「窗口应用」**（微信、Chrome、终端等常规应用）。
-  * 顶部内置即时搜索框，敲几个字母瞬间定位。
-* 📊 **实时物理内存 (RSS) 监控**：
-  * 基于 macOS 底层 `libproc` 接口，零 CPU 开销秒级显示每个进程真实的物理内存占用。
-  * 智能颜色预警（绿色常规 / 橙色超 200MB / 红色超 500MB），一眼揪出“内存刺客”。
-* 🔄 **一键重启（瞬间释放内存）**：
-  * 在行内或右键菜单中提供 **`[🔄 重启]`** 动作。
-  * 自动终止原进程并在后台静默重新拉起，瞬间清空缓存碎片，把几百兆内存彻底还给系统。
-* 🚀 **动态交互状态响应**：
-  * 点击“打开”：瞬间显示 `已唤起 ✓`。
-  * 点击“重启”：即刻出现旋转 Loading 动画。
-  * 点击“退出”：整行应用立即半透明淡出，告别“不知道点没点上”的困惑。
-* 🕒 **最近退出历史与恢复**：记录通过本工具退出的应用，随时点击“启动”一键复原。
+* ⌨️ **全局快捷键一键唤出**：默认支持 `Option + Shift + A` (`⌥⇧A`)，即便菜单栏图标被挤出视野，也可随时居中呼出浮窗。
+* 🔍 **智能分类与快速搜索**：自动区分 **「菜单栏应用」** 与 **「窗口应用」**，内置即时搜索框。
+* 📊 **实时物理内存 (RSS) 监控**：基于底层 `libproc` 接口，零开销显示每个进程真实内存，辅以三色预警（常规 / 橙色>200MB / 红色>500MB）。
+* 🔄 **一键重启（瞬间释放内存）**：一键关闭并在后台静默拉起应用，瞬间清空如 Maccy 等工具的内存膨胀。
+* 🚀 **动态点击状态响应**：打开显示 `已唤起 ✓`，重启显示转圈菊花，退出立即置灰淡出。
+
+#### 2. 🧹 磁盘缓存扫雷与清理 (Disk Cleaner)
+* 🎯 **纯白名单安全扫描**：只扫描 100% 安全可删的无害缓存，彻底杜绝误删系统文件：
+  * **🌐 浏览器多媒体缓存**：Chrome / Safari / Edge 离线图片与视频流缓存（常占 2GB~5GB）；
+  * **🍺 包管理器安装包残留**：Homebrew 下载的 `.tar.gz` 离线包、Python pip 缓存、npm 缓存；
+  * **🔨 开发者编译构建中间件**：Xcode `DerivedData`、Swift 项目 `.build`、Python `__pycache__`；
+  * **🎙️ 音视频临时工程**：AI 语音转写切片、剪辑临时工程缓存。
+* 🛡️ **一键安全释放**：精确计算选中的可清理体积，一键清理并保持应用目录无害重置。
 
 ---
 
@@ -60,15 +59,11 @@
 
 1. 从 [Releases 页面](../../releases) 下载最新的 `MenuBarApps-v1.1.zip`；
 2. 解压后将 `MenuBarApps.app` 拖移至系统 **“访达 -> 应用程序 (Applications)”**；
-3. **首次打开**：按住 `Control` 键点击应用图标，在弹出的右键菜单中选择 **“打开”**，然后点击 **“仍要打开”** 即可。
-
-> **💡 开机自启建议**：在 macOS **“系统设置 -> 通用 -> 登录项”** 中，将 `MenuBarApps` 添加为开机自启，享受开机即用的纯净体验。
+3. **首次打开**：按住 `Control` 键点击应用图标，选择 **“打开”**，然后点击 **“仍要打开”** 即可。
 
 ---
 
 ### 🛠️ 源码构建
-
-本项目采用纯原生 Swift / SwiftUI 编写，零第三方依赖：
 
 ```bash
 # 1. 克隆仓库
@@ -78,7 +73,6 @@ cd MenuBarApps
 # 2. 一键编译并打包
 ./build.sh
 ```
-打包成功后，可在项目目录下生成 `MenuBarApps.app` 及分发用的 `.zip` 压缩包。
 
 ---
 
@@ -86,57 +80,32 @@ cd MenuBarApps
 
 ### 💡 Why MenuBarApps?
 
-On macOS—especially on newer MacBooks with a **camera notch**—the top-right menu bar easily runs out of horizontal space as you install more background utilities (clipboard managers, cloud drives, system monitors, etc.). Once space is exhausted, icons are pushed off-screen or hidden behind the notch, leaving you with **no easy way to see what's running or quit them**.
+On macOS (especially on MacBooks with camera notches), the menu bar easily runs out of space, hiding background apps off-screen. Meanwhile, developers and everyday users suffer from silent disk hogs (multi-gigabyte browser media caches, stale package installers, Xcode DerivedData, `.build` folders).
 
-Additionally, many background helper utilities experience memory bloat over extended periods (e.g., hoarding hundreds of megabytes of cached images).
-
-**MenuBarApps** is a clean, ultra-lightweight, native macOS utility designed to regain control over all your background and regular apps with zero hassle.
+**MenuBarApps** integrates **Active App Management** with a **Safe Whitelist Disk Cleaner** in a single, lightweight menu bar popover.
 
 ---
 
 ### ✨ Key Features
 
-* ⚡ **Minimalist Tray Indicator**: Occupies just a single slot on your menu bar with a live numeric count (e.g., ` 5`).
-* ⌨️ **Global Shortcut Activation**: Press `Option + Shift + A` (`⌥⇧A`) anytime, anywhere to summon the manager panel, even if your menu bar icon is hidden.
-* 🔍 **Smart Classification & Instant Filter**:
-  * Cleanly separates **Menu Bar Utilities** (accessory apps without dock icons) and **Window Apps** (Chrome, WeChat, Terminal, etc.).
-  * Instant search bar to filter by app name or process PID.
-* 📊 **Real-time Memory (RSS) Footprint**:
-  * Powered by the native `libproc` Mach kernel APIs with near-zero CPU and battery usage.
-  * Color-coded memory alerts (Normal / Orange > 200MB / Red > 500MB) to identify memory-heavy apps at a glance.
-* 🔄 **One-Click Restart (Instant Memory Flush)**:
-  * Click the `[🔄]` button to terminate the app and silently relaunch it in the background, instantly freeing up memory leaks without manual steps.
-* 🚀 **Clear Action Feedback**:
-  * "Open": immediately confirms with `Activated ✓`.
-  * "Restart": triggers a smooth rotating spinner.
-  * "Quit": instantaneously dims the row to 45% opacity with clear status changes.
-* 🕒 **Recently Quit History**: Keep track of apps you've closed and relaunch them with one click.
+#### 1. 📱 App Management
+* ⚡ **Live Status Item**: Minimalist icon displaying the count of background accessory apps.
+* ⌨️ **Global Shortcut**: `Option + Shift + A` (`⌥⇧A`) opens the dashboard anywhere.
+* 🔍 **Smart Grouping**: Separates menu bar accessory apps from standard GUI window apps.
+* 📊 **Live RSS Memory Footprint**: Kernel-level memory reporting with color-coded badges.
+* 🔄 **One-Click Restart**: Terminates and silently relaunches memory-bloated apps (like Maccy) to flush RAM instantly.
+* 🚀 **Clear Action Feedback**: Visual indicators for opening, restarting spinner, and dimming on quit.
 
----
-
-### 📥 Download & Installation
-
-1. Download the latest `MenuBarApps-v1.1.zip` from [Releases](../../releases);
-2. Unzip and drag `MenuBarApps.app` into your `/Applications` folder;
-3. **First-time launch**: Right-click (or Control-click) `MenuBarApps.app` in Finder, select **Open**, and click **Open Anyway**.
-
----
-
-### 🛠️ Build from Source
-
-Built entirely with native Swift and SwiftUI without any external dependencies:
-
-```bash
-# Clone the repository
-git clone https://github.com/quiet52/MenuBarApps.git
-cd MenuBarApps
-
-# Compile and package into .app
-./build.sh
-```
+#### 2. 🧹 Safe Disk Cleaner
+* 🎯 **Strict Whitelist Scanning**: Only detects 100% safe-to-delete caches:
+  * Browser media/image caches (Google Chrome, Safari, Edge)
+  * Package managers offline archives (Homebrew `.tar.gz`, pip, npm)
+  * Developer build directories (Xcode `DerivedData`, Swift `.build`, `__pycache__`)
+  * Media processing temporary chunks
+* 🛡️ **One-Click Clean**: Reclaims gigabytes of disk storage with instant feedback.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.
+This project is licensed under the [MIT License](LICENSE).

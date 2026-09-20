@@ -3,6 +3,7 @@ import AppKit
 
 public struct PopoverView: View {
     @ObservedObject var manager: AppManager
+    @ObservedObject var cleanerService = DiskCleanerService.shared
     
     public init(manager: AppManager) {
         self.manager = manager
@@ -10,50 +11,101 @@ public struct PopoverView: View {
     
     public var body: some View {
         VStack(spacing: 0) {
-            // 1. 顶部搜索与刷新
-            headerView
+            // 顶部一级功能导航 (应用管理 vs 磁盘清理)
+            topNavTabBar
                 .padding(.horizontal, 14)
-                .padding(.top, 12)
-                .padding(.bottom, 8)
-            
-            // 2. 分类切换标签
-            categorySelectorView
-                .padding(.horizontal, 14)
+                .padding(.top, 10)
                 .padding(.bottom, 8)
             
             Divider()
             
-            // 3. 中间可滚动列表 (确保占满剩余可用高度，杜绝 0 高度折叠)
+            // 内容区域根据 Tab 动态切换
+            if manager.selectedTab == .apps {
+                appsManagementView
+            } else {
+                DiskCleanerView(service: cleanerService)
+            }
+        }
+        .frame(width: 340, height: 480)
+        .sheet(isPresented: $manager.showingIgnoredSheet) {
+            IgnoredAppsView(manager: manager)
+        }
+    }
+    
+    // MARK: - 顶部双标签切换栏
+    private var topNavTabBar: some View {
+        HStack(spacing: 4) {
+            ForEach(NavigationTab.allCases) { tab in
+                Button(action: {
+                    manager.selectedTab = tab
+                    if tab == .cleaner && cleanerService.items.isEmpty {
+                        cleanerService.scan()
+                    }
+                }) {
+                    HStack(spacing: 5) {
+                        Image(systemName: tab.iconName)
+                            .font(.system(size: 11))
+                        Text(tab.rawValue)
+                            .font(.system(size: 12, weight: manager.selectedTab == tab ? .semibold : .regular))
+                    }
+                    .foregroundColor(manager.selectedTab == tab ? .primary : .secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 5)
+                    .background(
+                        manager.selectedTab == tab ?
+                        Color(nsColor: .controlBackgroundColor) :
+                        Color.clear
+                    )
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(2)
+        .background(Color(nsColor: .quaternaryLabelColor).opacity(0.6))
+        .cornerRadius(8)
+    }
+    
+    // MARK: - 原有：应用管理主视图
+    private var appsManagementView: some View {
+        VStack(spacing: 0) {
+            // 1. 搜索与刷新
+            headerView
+                .padding(.horizontal, 14)
+                .padding(.top, 8)
+                .padding(.bottom, 6)
+            
+            // 2. 分类切换标签
+            categorySelectorView
+                .padding(.horizontal, 14)
+                .padding(.bottom, 6)
+            
+            Divider()
+            
+            // 3. 运行列表
             ScrollView {
                 VStack(spacing: 10) {
-                    // 正在运行列表
                     runningSection
                     
-                    // 最近退出列表
                     if !manager.filteredRecentApps.isEmpty {
                         recentSection
                     }
                     
-                    // 空状态
                     if manager.filteredRunningApps.isEmpty && manager.filteredRecentApps.isEmpty {
                         emptyStateView
                     }
                 }
                 .padding(.horizontal, 10)
-                .padding(.vertical, 10)
+                .padding(.vertical, 8)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             
             Divider()
             
-            // 4. 底部快捷提示与操作
+            // 4. 底部状态与退出本工具
             footerView
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-        }
-        .frame(width: 340, height: 480)
-        .sheet(isPresented: $manager.showingIgnoredSheet) {
-            IgnoredAppsView(manager: manager)
         }
     }
     
@@ -90,7 +142,7 @@ public struct PopoverView: View {
             .help("立即刷新应用列表")
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.vertical, 5)
         .background(Color(nsColor: .controlBackgroundColor))
         .cornerRadius(8)
     }
@@ -106,7 +158,7 @@ public struct PopoverView: View {
                         .font(.system(size: 11, weight: manager.selectedCategory == category ? .semibold : .regular))
                         .foregroundColor(manager.selectedCategory == category ? .primary : .secondary)
                         .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
+                        .padding(.vertical, 3)
                         .background(
                             manager.selectedCategory == category ?
                             Color(nsColor: .selectedControlColor).opacity(0.18) :
