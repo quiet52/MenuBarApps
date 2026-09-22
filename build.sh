@@ -4,7 +4,7 @@ set -e
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_NAME="MenuBarApps"
 APP_BUNDLE="$PROJECT_DIR/$APP_NAME.app"
-ZIP_NAME="$PROJECT_DIR/$APP_NAME-v1.2.zip"
+ZIP_NAME="$PROJECT_DIR/$APP_NAME-v1.3.zip"
 
 echo "🔨 正在编译 $APP_NAME (Release 模式)..."
 cd "$PROJECT_DIR"
@@ -42,7 +42,7 @@ cat << 'PLIST' > "$APP_BUNDLE/Contents/Info.plist"
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.2.0</string>
+    <string>1.3.0</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>

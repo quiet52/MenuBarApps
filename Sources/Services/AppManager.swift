@@ -21,6 +21,7 @@ public enum AppCategory: String, CaseIterable, Identifiable {
     case all = "全部"
     case accessory = "菜单栏"
     case regular = "窗口应用"
+    case cli = "终端/AI"
     
     public var id: String { rawValue }
 }
@@ -69,16 +70,19 @@ public final class AppManager: ObservableObject {
         case .all:
             break
         case .accessory:
-            list = list.filter { $0.isAccessory }
+            list = list.filter { $0.isAccessory && !$0.isCliProcess }
         case .regular:
-            list = list.filter { !$0.isAccessory }
+            list = list.filter { !$0.isAccessory && !$0.isCliProcess }
+        case .cli:
+            list = list.filter { $0.isCliProcess }
         }
         
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !query.isEmpty {
             list = list.filter {
                 $0.name.localizedCaseInsensitiveContains(query) ||
-                $0.bundleId.localizedCaseInsensitiveContains(query)
+                $0.bundleId.localizedCaseInsensitiveContains(query) ||
+                ($0.commandLine?.localizedCaseInsensitiveContains(query) ?? false)
             }
         }
         return list
@@ -90,16 +94,19 @@ public final class AppManager: ObservableObject {
         case .all:
             break
         case .accessory:
-            list = list.filter { $0.isAccessory }
+            list = list.filter { $0.isAccessory && !$0.isCliProcess }
         case .regular:
-            list = list.filter { !$0.isAccessory }
+            list = list.filter { !$0.isAccessory && !$0.isCliProcess }
+        case .cli:
+            list = list.filter { $0.isCliProcess }
         }
         
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !query.isEmpty {
             list = list.filter {
                 $0.name.localizedCaseInsensitiveContains(query) ||
-                $0.bundleId.localizedCaseInsensitiveContains(query)
+                $0.bundleId.localizedCaseInsensitiveContains(query) ||
+                ($0.commandLine?.localizedCaseInsensitiveContains(query) ?? false)
             }
         }
         return list
@@ -179,6 +186,16 @@ public final class AppManager: ObservableObject {
             }
         }
         
+        // 扫描并整合终端 / AI 常驻服务 (Ollama, Claude Code, Kimi Code 等)
+        let cliApps = CliProcessScanner.shared.scanActiveCliServices()
+        running.append(contentsOf: cliApps)
+        for cli in cliApps {
+            runningIds.insert(cli.id)
+            if let path = cli.bundleURL?.path {
+                runningPaths.insert(path)
+            }
+        }
+        
         running.sort { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         
         let recent = HistoryStore.shared.getRecentQuitApps(
@@ -196,6 +213,17 @@ public final class AppManager: ObservableObject {
         openingAppIds.insert(item.id)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             self?.openingAppIds.remove(item.id)
+        }
+        
+        if item.isCliProcess {
+            let terms = ["com.apple.Terminal", "com.googlecode.iterm2", "dev.warp.Warp-GDK", "com.mitchellh.ghostty"]
+            for termId in terms {
+                if let termApp = NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == termId }) {
+                    termApp.activate(options: [.activateIgnoringOtherApps])
+                    break
+                }
+            }
+            return
         }
         
         if let pid = item.pid,
@@ -225,6 +253,23 @@ public final class AppManager: ObservableObject {
         quittingAppIds.insert(item.id)
         HistoryStore.shared.recordQuit(item: item)
         
+        if item.isCliProcess, let pid = item.pid {
+            if force {
+                kill(pid, SIGKILL)
+            } else {
+                kill(pid, SIGTERM)
+                DispatchQueue.global().asyncAfter(deadline: .now() + 1.2) {
+                    if kill(pid, 0) == 0 {
+                        kill(pid, SIGKILL)
+                    }
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                self?.refresh()
+            }
+            return
+        }
+        
         var targetApp: NSRunningApplication?
         if let pid = item.pid {
             targetApp = NSRunningApplication(processIdentifier: pid)
@@ -247,10 +292,36 @@ public final class AppManager: ObservableObject {
     }
     
     public func restartApp(_ item: AppItem) {
-        guard let url = item.bundleURL else { return }
-        
         restartingAppIds.insert(item.id)
         HistoryStore.shared.recordQuit(item: item)
+        
+        if item.isCliProcess, let pid = item.pid {
+            let execURL = item.bundleURL
+            let isOllama = item.name.lowercased().contains("ollama")
+            kill(pid, SIGTERM)
+            
+            DispatchQueue.global().async { [weak self] in
+                for _ in 0..<15 {
+                    if kill(pid, 0) != 0 { break }
+                    usleep(100_000)
+                }
+                
+                if isOllama, let execURL = execURL {
+                    let proc = Process()
+                    proc.executableURL = execURL
+                    proc.arguments = ["serve"]
+                    try? proc.run()
+                }
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    self?.restartingAppIds.remove(item.id)
+                    self?.refresh()
+                }
+            }
+            return
+        }
+        
+        guard let url = item.bundleURL else { return }
         
         var targetApp: NSRunningApplication?
         if let pid = item.pid {
