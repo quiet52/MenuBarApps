@@ -15,6 +15,8 @@ public struct AppItem: Identifiable, Hashable {
     public let quitAt: Date?
     /// 内存占用（phys_footprint，与活动监视器一致；图形应用已包含其 Helper 子进程）
     public let memoryBytes: UInt64?
+    /// CPU 占用百分比（100% = 占满一个核心，多进程应用为各进程之和）；第一次采样时为 nil
+    public let cpuPercent: Double?
     /// 合并统计的进程数（主进程 + Helper / 子进程）
     public let processCount: Int
     /// 进程启动时间，用于终止前确认 PID 未被复用
@@ -35,6 +37,7 @@ public struct AppItem: Identifiable, Hashable {
         fullCommandLine: String? = nil,
         quitAt: Date? = nil,
         memoryBytes: UInt64? = nil,
+        cpuPercent: Double? = nil,
         processCount: Int = 1,
         processStartTime: UInt64? = nil,
         canRestart: Bool = true
@@ -57,6 +60,7 @@ public struct AppItem: Identifiable, Hashable {
         self.fullCommandLine = fullCommandLine
         self.quitAt = quitAt
         self.memoryBytes = memoryBytes
+        self.cpuPercent = cpuPercent
         self.processCount = processCount
         self.processStartTime = processStartTime
         self.canRestart = canRestart
@@ -65,6 +69,12 @@ public struct AppItem: Identifiable, Hashable {
     public var memoryString: String? {
         guard let bytes = memoryBytes, bytes > 0 else { return nil }
         return ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .memory)
+    }
+
+    public var cpuString: String? {
+        guard let cpu = cpuPercent else { return nil }
+        // 超过 100% 时省略小数，保证列宽够用
+        return String(format: cpu < 100 ? "%.1f%%" : "%.0f%%", cpu)
     }
 
     public func hash(into hasher: inout Hasher) {
@@ -83,6 +93,7 @@ public struct AppItem: Identifiable, Hashable {
                lhs.isCliProcess == rhs.isCliProcess &&
                lhs.quitAt == rhs.quitAt &&
                lhs.memoryBytes == rhs.memoryBytes &&
+               lhs.cpuPercent == rhs.cpuPercent &&
                lhs.processCount == rhs.processCount
     }
 

@@ -39,15 +39,20 @@
 
 #### 1. 📱 应用与常驻服务管理 (App & Service Management)
 * ⚡ **极简常驻，数字角标**：在菜单栏仅占用单图标位，实时小字显示当前运行的菜单栏（辅助）应用数量（如 ` 5`）；面板关闭时不做任何轮询，几乎零开销。
+* 🌐 **菜单栏实时网速（可选）**：右键菜单中开启「菜单栏显示实时网速」后，角标旁显示上下行速率（如 ` 5  ↓1.2M ↑340K`）；默认关闭，开启后即使面板隐藏也会每秒采样一次。
 * 🔁 **开机自动启动**：右键菜单栏图标或在面板「⋯」菜单中一键开启。
 * ⌨️ **全局快捷键一键唤出**：默认 `⌥⇧A`，可改为 `⌃⌥A` / `⌃⌥M` / `⌃⌥Space`；即便菜单栏图标被刘海挤出视野，也会在屏幕右上角弹出悬浮面板。
-* 🔍 **智能分类、搜索与排序**：清晰划分 **「菜单栏」**、**「窗口应用」** 与 **「终端/AI」**，支持按名称 / PID / 命令行搜索，可按内存从高到低排序。
+* 🔍 **智能分类、搜索与排序**：清晰划分 **「菜单栏」**、**「窗口应用」** 与 **「终端/AI」**，支持按名称 / PID / 命令行搜索，可按内存或 CPU 从高到低排序。
 * 🤖 **终端 / AI 常驻服务监控 (CLI & AI Agents)**：无需 `.app` 外壳，自动通过内核接口捕获终端运行的本地模型与智能体（**Ollama、Claude Code、Codex、Gemini CLI、Kimi Code、Pi Agent、Aider** 等）以及 Redis / PostgreSQL / MySQL 等常驻服务；同一服务的子进程自动合并为一行，支持一键终止（`ollama serve` 还支持一键重启）。
-* 📊 **与活动监视器一致的内存统计**：采用 `phys_footprint` 口径，并把 Chrome、VS Code 等多进程应用的 Helper 进程一并计入，辅以三色预警（常规 / 橙色>500MB / 红色>1.5GB）。
+* 📊 **与活动监视器一致的内存统计**：采用 `phys_footprint` 口径，并把 Chrome、VS Code 等多进程应用的 Helper 进程一并计入，辅以三色预警（常规 / 橙色>500MB / 红色>1.5GB）。同时显示每个应用的 CPU 占用（100% = 占满一个核心，超过 50% 高亮）。
 * 🔄 **一键重启（释放内存）**：等待应用真正退出后再静默重新打开；若应用因「是否保存」等原因未退出，会自动取消并提示，不会只关不开。
 * 🚀 **动态点击状态响应**：打开显示 `已唤起 ✓`，重启显示转圈菊花，退出立即置灰淡出。
 
-#### 2. 🧹 磁盘缓存扫雷与清理 (Disk Cleaner)
+#### 2. 📈 系统概览 (System Overview)
+* 🧭 **面板顶部一览**：实时显示 CPU、内存（已用 / 总量）、GPU 占用以及上下行网速，可折叠，折叠时在标题行显示 CPU 与内存概要。
+* 👁️ **按需采样**：只在面板打开时每秒采样；GPU 数据来自非公开接口，取不到时显示「—」。
+
+#### 3. 🧹 磁盘缓存扫雷与清理 (Disk Cleaner)
 * 🎯 **纯白名单扫描**：只扫描可由软件自动重建的缓存，不触碰个人文件与系统目录：
   * **🌐 浏览器多媒体缓存**：Chrome / Safari / Edge 离线图片与视频流缓存（常占 2GB~5GB）；
   * **🍺 包管理器安装包残留**：Homebrew 下载的 `.tar.gz` 离线包、Python pip 缓存、npm 缓存；
@@ -61,7 +66,7 @@
 
 ### 📥 下载与安装
 
-1. 从 [Releases 页面](../../releases) 下载最新的 `MenuBarApps-v1.4.0.zip`；
+1. 从 [Releases 页面](../../releases) 下载最新的 `MenuBarApps-v1.5.0.zip`；
 2. 解压后将 `MenuBarApps.app` 拖移至系统 **“访达 -> 应用程序 (Applications)”**；
 3. **首次打开**：按住 `Control` 键点击应用图标，选择 **“打开”**，然后点击 **“仍要打开”** 即可。
 
@@ -98,11 +103,16 @@ On macOS (especially on MacBooks with camera notches), the menu bar easily runs 
 * ⌨️ **Global Shortcut**: `⌥⇧A` by default, switchable to `⌃⌥A` / `⌃⌥M` / `⌃⌥Space`.
 * 🔍 **Smart Grouping**: Separates menu bar accessory apps, standard GUI window apps, and **Terminal/AI Services**.
 * 🤖 **Terminal & AI Agent Services**: Detects CLI models, TUI assistants (**Ollama, Claude Code, Codex, Gemini CLI, Kimi Code, Pi Agent, Aider**, etc.) and dev daemons; child processes are grouped into one row. One-click termination (restart for `ollama serve`).
-* 📊 **Activity Monitor–consistent Memory**: `phys_footprint`, including helper processes of multi-process apps; sortable by memory.
+* 📊 **Activity Monitor–consistent Memory & CPU**: `phys_footprint` memory, including helper processes of multi-process apps; per-app CPU usage; sortable by memory or CPU.
+* 🌐 **Optional Live Network Speed in the Menu Bar**: Turn on "Show live network speed in menu bar" from the right-click menu (off by default).
 * 🔄 **Reliable Restart**: Waits until the app has actually exited before relaunching; cancels with a notice if the app refuses to quit.
 * 🚀 **Clear Action Feedback**: Visual indicators for opening, restarting spinner, and dimming on quit.
 
-#### 2. 🧹 Safe Disk Cleaner
+#### 2. 📈 System Overview
+* 🧭 **Collapsible Panel Header**: Live CPU, memory (used / total), GPU utilization and up/down network speed.
+* 👁️ **Sampled Only When Visible**: Samples once per second while the panel is open. GPU values come from a private interface and show "—" when unavailable.
+
+#### 3. 🧹 Safe Disk Cleaner
 * 🎯 **Strict Whitelist Scanning**: Only detects caches that apps regenerate automatically:
   * Browser media/image caches (Google Chrome, Safari, Edge, Firefox)
   * Package managers offline archives (Homebrew `.tar.gz`, pip, npm, Yarn, CocoaPods)
@@ -115,7 +125,7 @@ On macOS (especially on MacBooks with camera notches), the menu bar easily runs 
 
 ### 📥 Download & Installation
 
-1. Download `MenuBarApps-v1.4.0.zip` from [Releases](../../releases);
+1. Download `MenuBarApps-v1.5.0.zip` from [Releases](../../releases);
 2. Unzip and drag `MenuBarApps.app` to your `/Applications` folder;
 3. **First launch**: Right-click (or Control-click) `MenuBarApps.app`, select **Open**, and click **Open Anyway**.
 

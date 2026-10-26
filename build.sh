@@ -2,7 +2,7 @@
 set -e
 
 # 版本号只在这里维护一处
-VERSION="1.4.0"
+VERSION="1.5.0"
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_NAME="MenuBarApps"

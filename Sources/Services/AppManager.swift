@@ -29,6 +29,7 @@ public enum AppCategory: String, CaseIterable, Identifiable {
 public enum AppSortMode: String, CaseIterable, Identifiable {
     case name = "按名称"
     case memory = "按内存"
+    case cpu = "按 CPU"
 
     public var id: String { rawValue }
 }
@@ -119,6 +120,8 @@ public final class AppManager: ObservableObject {
             return list
         case .memory:
             return list.sorted { ($0.memoryBytes ?? 0) > ($1.memoryBytes ?? 0) }
+        case .cpu:
+            return list.sorted { ($0.cpuPercent ?? 0) > ($1.cpuPercent ?? 0) }
         }
     }
 
@@ -146,6 +149,7 @@ public final class AppManager: ObservableObject {
             RunLoop.main.add(timer, forMode: .common)
             pollTimer = timer
         }
+        SystemMonitor.shared.setPanelVisible(visible)
     }
 
     private func setupObservers() {
@@ -250,17 +254,23 @@ public final class AppManager: ObservableObject {
                 let path = app.bundleURL?.path ?? ""
 
                 // 内存 = 主进程 + 位于该 .app 包内的所有 Helper / 渲染进程（Chrome、VS Code 等多进程应用）
+                // CPU 与内存口径相同，同样合并所有相关进程
                 var memory: UInt64 = 0
+                var cpu: Double?
                 var processCount = 0
                 if !path.isEmpty {
                     let prefix = path.hasSuffix("/") ? path : path + "/"
                     for entry in processes where entry.path.hasPrefix(prefix) {
                         memory += footprint(entry.pid)
+                        if let usage = CpuUsageSampler.shared.usage(pid: entry.pid) {
+                            cpu = (cpu ?? 0) + usage
+                        }
                         processCount += 1
                     }
                 }
                 if processCount == 0 {
                     memory = footprint(app.pid)
+                    cpu = CpuUsageSampler.shared.usage(pid: app.pid)
                     processCount = 1
                 }
 
@@ -280,6 +290,7 @@ public final class AppManager: ObservableObject {
                     isRunning: true,
                     isAccessory: app.isAccessory,
                     memoryBytes: memory > 0 ? memory : nil,
+                    cpuPercent: cpu,
                     processCount: processCount
                 ))
                 runningIds.insert(itemId)

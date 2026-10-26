@@ -4,6 +4,7 @@ import AppKit
 public struct PopoverView: View {
     @ObservedObject var manager: AppManager
     @ObservedObject var cleanerService = DiskCleanerService.shared
+    @ObservedObject var systemMonitor = SystemMonitor.shared
 
     public init(manager: AppManager) {
         self.manager = manager
@@ -11,6 +12,11 @@ public struct PopoverView: View {
 
     public var body: some View {
         VStack(spacing: 0) {
+            // 顶部系统概览（CPU / 内存 / GPU / 网速，可折叠）
+            SystemOverviewView(monitor: systemMonitor)
+                .padding(.horizontal, 14)
+                .padding(.top, 10)
+
             // 顶部一级功能导航 (应用管理 vs 磁盘清理)
             topNavTabBar
                 .padding(.horizontal, 14)

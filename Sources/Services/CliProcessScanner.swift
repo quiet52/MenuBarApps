@@ -77,15 +77,20 @@ public enum ProcessInspector {
         return true
     }
 
-    /// 与「活动监视器 → 内存」一致的口径 (phys_footprint)；失败时回退到常驻内存 RSS
-    public static func memoryFootprint(pid: pid_t) -> UInt64? {
+    /// 读取进程的 rusage_info_v2（内存与 CPU 时间共用）
+    static func rusageInfo(pid: pid_t) -> rusage_info_v2? {
         var usage = rusage_info_v2()
         let ret = withUnsafeMutablePointer(to: &usage) { ptr in
             ptr.withMemoryRebound(to: rusage_info_t?.self, capacity: 1) { rebound in
                 proc_pid_rusage(pid, RUSAGE_INFO_V2, rebound)
             }
         }
-        if ret == 0 {
+        return ret == 0 ? usage : nil
+    }
+
+    /// 与「活动监视器 → 内存」一致的口径 (phys_footprint)；失败时回退到常驻内存 RSS
+    public static func memoryFootprint(pid: pid_t) -> UInt64? {
+        if let usage = rusageInfo(pid: pid) {
             return usage.ri_phys_footprint
         }
 
@@ -258,10 +263,14 @@ public final class CliProcessScanner {
         }
 
         var memoryByRoot: [pid_t: UInt64] = [:]
+        var cpuByRoot: [pid_t: Double] = [:]
         var childCountByRoot: [pid_t: Int] = [:]
         for (pid, match) in matches {
             let root = rootPid(of: pid, ruleName: match.rule.name)
             memoryByRoot[root, default: 0] += ProcessInspector.memoryFootprint(pid: pid) ?? 0
+            if let cpu = CpuUsageSampler.shared.usage(pid: pid) {
+                cpuByRoot[root, default: 0] += cpu
+            }
             if root != pid {
                 childCountByRoot[root, default: 0] += 1
             }
@@ -293,6 +302,7 @@ public final class CliProcessScanner {
                 commandLine: shortCmd,
                 fullCommandLine: fullCmd,
                 memoryBytes: totalMemory > 0 ? totalMemory : nil,
+                cpuPercent: cpuByRoot[root],
                 processCount: 1 + (childCountByRoot[root] ?? 0),
                 processStartTime: match.entry.startTime,
                 canRestart: canRestart

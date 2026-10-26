@@ -9,7 +9,32 @@ struct AppRowView: View {
     private static let warnThreshold: UInt64 = 500 * 1024 * 1024
     private static let dangerThreshold: UInt64 = 1536 * 1024 * 1024
     
+    // CPU 预警阈值（百分比，100 = 占满一个核心）
+    private static let cpuWarnThreshold: Double = 50
+
     private var memoryBytes: UInt64 { item.memoryBytes ?? 0 }
+
+    private func resourceColumn(isQuitting: Bool) -> some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            if let mem = item.memoryString {
+                Text(mem)
+                    .font(.system(size: 10, weight: memoryBytes > Self.warnThreshold ? .medium : .regular, design: .monospaced))
+                    .foregroundColor(
+                        memoryBytes > Self.dangerThreshold ? .red :
+                        (memoryBytes > Self.warnThreshold ? .orange : .secondary)
+                    )
+                    .help(item.processCount > 1 ? "与活动监视器口径一致，已合并 \(item.processCount) 个相关进程（Helper / 子进程）" : "与活动监视器口径一致的内存占用")
+            }
+
+            if let cpu = item.cpuString, !isQuitting {
+                Text("CPU \(cpu)")
+                    .font(.system(size: 10, weight: (item.cpuPercent ?? 0) > Self.cpuWarnThreshold ? .medium : .regular, design: .monospaced))
+                    .foregroundColor((item.cpuPercent ?? 0) > Self.cpuWarnThreshold ? .orange : .secondary)
+                    .help("相邻两次刷新之间的平均占用，100% 表示占满一个 CPU 核心；多进程应用为各进程之和")
+            }
+        }
+        .frame(width: 62, alignment: .trailing)
+    }
     
     var body: some View {
         let isOpening = manager.openingAppIds.contains(item.id)
@@ -64,17 +89,6 @@ struct AppRowView: View {
                         Text("PID: \(pid)")
                     }
                     
-                    if let mem = item.memoryString {
-                        Text("·")
-                        Text(item.processCount > 1 ? "\(mem) (\(item.processCount) 进程)" : mem)
-                            .font(.system(size: 10, weight: memoryBytes > Self.warnThreshold ? .medium : .regular))
-                            .foregroundColor(
-                                memoryBytes > Self.dangerThreshold ? .red :
-                                (memoryBytes > Self.warnThreshold ? .orange : .secondary)
-                            )
-                            .help(item.processCount > 1 ? "与活动监视器口径一致，已合并 \(item.processCount) 个相关进程（Helper / 子进程）" : "与活动监视器口径一致的内存占用")
-                    }
-                    
                     if let cmd = item.commandLine {
                         Text("·")
                         Text(cmd)
@@ -90,7 +104,10 @@ struct AppRowView: View {
             }
             
             Spacer()
-            
+
+            // 资源占用列：内存在上、CPU 在下，固定宽度，不挤压左侧文字
+            resourceColumn(isQuitting: isQuitting)
+
             // 快捷操作按钮 (具有即时点击状态反馈)
             HStack(spacing: 5) {
                 if item.isCliProcess {

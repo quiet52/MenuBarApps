@@ -55,11 +55,15 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelega
     }
 
     private func setupBindings() {
-        manager.$menuBarAppCount
+        // 菜单栏文字 = 应用数量，开启「显示网速」时追加实时网速
+        Publishers.CombineLatest(manager.$menuBarAppCount, SystemMonitor.shared.$menuBarSpeedText)
+            .map { count, speed in
+                speed.map { " \(count)  \($0)" } ?? " \(count)"
+            }
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] count in
-                self?.statusItem?.button?.title = " \(count)"
+            .sink { [weak self] title in
+                self?.statusItem?.button?.title = title
             }
             .store(in: &cancellables)
     }
@@ -102,6 +106,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelega
         loginItem.state = manager.launchAtLogin ? .on : .off
         menu.addItem(loginItem)
 
+        let speedItem = NSMenuItem(title: "菜单栏显示实时网速", action: #selector(toggleMenuBarSpeed), keyEquivalent: "")
+        speedItem.target = self
+        speedItem.state = SystemMonitor.shared.showsSpeedInMenuBar ? .on : .off
+        menu.addItem(speedItem)
+
         let hotKeyMenu = NSMenu()
         for preset in HotKeyPreset.all {
             let item = NSMenuItem(title: preset.title, action: #selector(selectHotKey(_:)), keyEquivalent: "")
@@ -129,6 +138,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelega
         guard let button = statusItem?.button, let popover = popover else { return }
         closeFloatingPanel()
         showPopover(relativeTo: button, popover: popover)
+    }
+
+    @objc private func toggleMenuBarSpeed() {
+        SystemMonitor.shared.showsSpeedInMenuBar.toggle()
     }
 
     @objc private func toggleLaunchAtLogin() {
