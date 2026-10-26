@@ -34,7 +34,20 @@ public final class FilterRules {
         return ignoredBundleIds.contains(bundleId)
     }
     
+    /// 根据 bundleId 查找应用显示名称（用于「已忽略」列表）
+    public func displayName(for bundleId: String) -> String {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) {
+            return FileManager.default.displayName(atPath: url.path).replacingOccurrences(of: ".app", with: "")
+        }
+        return bundleId
+    }
+    
     public func isUserFacingApp(_ app: NSRunningApplication) -> Bool {
+        return isUserFacingApp(app, ignored: ignoredBundleIds)
+    }
+    
+    /// 传入预先读取好的忽略列表，避免批量判断时反复读取 UserDefaults
+    public func isUserFacingApp(_ app: NSRunningApplication, ignored: Set<String>) -> Bool {
         // 包含常规 Dock 应用 (.regular) 和 辅助菜单栏应用 (.accessory)
         guard app.activationPolicy == .accessory || app.activationPolicy == .regular else { return false }
         
@@ -52,7 +65,7 @@ public final class FilterRules {
         let name = app.localizedName ?? ""
         
         // 用户自定义忽略
-        if isIgnored(bundleId: bundleId) {
+        if ignored.contains(bundleId) {
             return false
         }
         

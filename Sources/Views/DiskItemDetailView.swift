@@ -89,7 +89,7 @@ public struct DiskItemDetailView: View {
     // MARK: - 路径信息卡片
     private var pathInfoCard: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("实际物理路径:")
+            Text(item.targets.count > 1 ? "所在项目（共 \(item.targets.count) 个缓存目录）:" : "实际物理路径:")
                 .font(.system(size: 10, weight: .medium))
                 .foregroundColor(.secondary)
             
@@ -127,7 +127,7 @@ public struct DiskItemDetailView: View {
                 .padding(.top, 2)
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("安全说明 (为什么 100% 可清理)")
+                Text("这是什么 / 清理后会怎样")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.primary)
                 
@@ -135,6 +135,18 @@ public struct DiskItemDetailView: View {
                     .font(.system(size: 10))
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                
+                if let cost = item.costNote {
+                    HStack(alignment: .top, spacing: 4) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 9))
+                        Text("清理代价：\(cost)")
+                            .font(.system(size: 10, weight: .medium))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .foregroundColor(.orange)
+                    .padding(.top, 2)
+                }
             }
         }
         .padding(10)
@@ -150,7 +162,7 @@ public struct DiskItemDetailView: View {
     private var subItemsSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("📦 体积排查明细 (Top \(service.currentDetailSubItems.count))")
+                Text(item.targets.count > 1 ? "📦 缓存目录明细 (\(service.currentDetailSubItems.count))" : "📦 体积排查明细 (Top \(service.currentDetailSubItems.count))")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.secondary)
                 
@@ -235,39 +247,67 @@ public struct DiskItemDetailView: View {
         .cornerRadius(6)
     }
     
-    // MARK: - 底部单项清理
+    // MARK: - 底部单项清理（两步确认）
     private var bottomActionBar: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("占用体积")
-                    .font(.system(size: 9))
-                    .foregroundColor(.secondary)
-                Text(item.sizeString)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.primary)
-            }
-            
-            Spacer()
-            
-            Button(action: {
-                service.cleanSingleItem(item)
-            }) {
-                HStack(spacing: 5) {
-                    if service.isCleaning {
-                        ProgressView()
-                            .controlSize(.mini)
-                        Text("清理中...")
-                    } else {
-                        Image(systemName: "trash")
-                            .font(.system(size: 11))
-                        Text("仅清理此项 (\(item.sizeString))")
-                    }
+        HStack(spacing: 8) {
+            if service.isConfirmingSingleClean {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("永久删除此项？")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("\(item.sizeString)，不会进入废纸篓")
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary)
                 }
-                .font(.system(size: 11, weight: .semibold))
+                
+                Spacer()
+                
+                Button("取消") {
+                    service.isConfirmingSingleClean = false
+                }
+                .controlSize(.small)
+                
+                Button(action: {
+                    service.isConfirmingSingleClean = false
+                    service.cleanSingleItem(item)
+                }) {
+                    Text("确认清理")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .controlSize(.small)
+            } else {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("占用体积")
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary)
+                    Text(item.sizeString)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.primary)
+                }
+                
+                Spacer()
+                
+                Button(action: {
+                    service.isConfirmingSingleClean = true
+                }) {
+                    HStack(spacing: 5) {
+                        if service.isCleaning {
+                            ProgressView()
+                                .controlSize(.mini)
+                            Text("清理中...")
+                        } else {
+                            Image(systemName: "trash")
+                                .font(.system(size: 11))
+                            Text("仅清理此项 (\(item.sizeString))")
+                        }
+                    }
+                    .font(.system(size: 11, weight: .semibold))
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(service.isCleaning)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
-            .disabled(service.isCleaning)
         }
     }
 }

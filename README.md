@@ -12,7 +12,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-macOS%2013%2B-blue?style=flat-square&logo=apple" alt="macOS 13+">
   <img src="https://img.shields.io/badge/Swift-5.9%20%7C%206.0-orange?style=flat-square&logo=swift" alt="Swift">
-  <img src="https://img.shields.io/badge/Architecture-Apple%20Silicon%20(Universal)-success?style=flat-square" alt="Apple Silicon">
+  <img src="https://img.shields.io/badge/Architecture-Apple%20Silicon%20(arm64)-success?style=flat-square" alt="Apple Silicon (arm64)">
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License">
 </p>
 
@@ -38,27 +38,30 @@
 ### ✨ 核心功能特性
 
 #### 1. 📱 应用与常驻服务管理 (App & Service Management)
-* ⚡ **极简常驻，数字角标**：在菜单栏仅占用单图标位，实时小字显示当前运行的后台辅助应用总数（如 ` 5`）。
-* ⌨️ **全局快捷键一键唤出**：默认支持 `Option + Shift + A` (`⌥⇧A`)，即便菜单栏图标被挤出视野，也可随时居中呼出浮窗。
-* 🔍 **智能分类与快速搜索**：清晰划分 **「菜单栏」**、**「窗口应用」** 与 **「终端/AI」**，内置即时搜索框。
-* 🤖 **终端 / AI 常驻服务监控 (CLI & AI Agents)**：无需 `.app` 外壳，自动通过内核接口捕获终端运行的本地模型与智能体（**Ollama、Claude Code、Kimi Code、Pi Agent、Aider、Open Interpreter** 等），实时呈现真实物理内存，并支持一键终止或重启！
-* 📊 **实时物理内存 (RSS) 监控**：基于底层 `libproc` 接口，零开销显示每个进程真实内存，辅以三色预警（常规 / 橙色>200MB / 红色>500MB）。
-* 🔄 **一键重启（瞬间释放内存）**：一键关闭并在后台静默拉起应用或后台服务，瞬间清空如 Maccy 或本地模型服务的内存碎片。
+* ⚡ **极简常驻，数字角标**：在菜单栏仅占用单图标位，实时小字显示当前运行的菜单栏（辅助）应用数量（如 ` 5`）；面板关闭时不做任何轮询，几乎零开销。
+* 🔁 **开机自动启动**：右键菜单栏图标或在面板「⋯」菜单中一键开启。
+* ⌨️ **全局快捷键一键唤出**：默认 `⌥⇧A`，可改为 `⌃⌥A` / `⌃⌥M` / `⌃⌥Space`；即便菜单栏图标被刘海挤出视野，也会在屏幕右上角弹出悬浮面板。
+* 🔍 **智能分类、搜索与排序**：清晰划分 **「菜单栏」**、**「窗口应用」** 与 **「终端/AI」**，支持按名称 / PID / 命令行搜索，可按内存从高到低排序。
+* 🤖 **终端 / AI 常驻服务监控 (CLI & AI Agents)**：无需 `.app` 外壳，自动通过内核接口捕获终端运行的本地模型与智能体（**Ollama、Claude Code、Codex、Gemini CLI、Kimi Code、Pi Agent、Aider** 等）以及 Redis / PostgreSQL / MySQL 等常驻服务；同一服务的子进程自动合并为一行，支持一键终止（`ollama serve` 还支持一键重启）。
+* 📊 **与活动监视器一致的内存统计**：采用 `phys_footprint` 口径，并把 Chrome、VS Code 等多进程应用的 Helper 进程一并计入，辅以三色预警（常规 / 橙色>500MB / 红色>1.5GB）。
+* 🔄 **一键重启（释放内存）**：等待应用真正退出后再静默重新打开；若应用因「是否保存」等原因未退出，会自动取消并提示，不会只关不开。
 * 🚀 **动态点击状态响应**：打开显示 `已唤起 ✓`，重启显示转圈菊花，退出立即置灰淡出。
 
 #### 2. 🧹 磁盘缓存扫雷与清理 (Disk Cleaner)
-* 🎯 **纯白名单安全扫描**：只扫描 100% 安全可删的无害缓存，彻底杜绝误删系统文件：
+* 🎯 **纯白名单扫描**：只扫描可由软件自动重建的缓存，不触碰个人文件与系统目录：
   * **🌐 浏览器多媒体缓存**：Chrome / Safari / Edge 离线图片与视频流缓存（常占 2GB~5GB）；
   * **🍺 包管理器安装包残留**：Homebrew 下载的 `.tar.gz` 离线包、Python pip 缓存、npm 缓存；
-  * **🔨 开发者编译构建中间件**：Xcode `DerivedData`、Swift 项目 `.build`、Python `__pycache__`；
-* 🛡️ **双锁安全网关与优雅清理**：通过 `CleanerSafetyValidator` 双重检验，保护根目录与目录属性，只清理内部缓存文件；
-* 🔍 **透明下钻与访达联动 (Detail Drill-down & Finder)**：点击任意项目右侧 `›` 即可无缝进入明细面板，查看绝对物理路径、100% 安全原理解释以及体积最大的具体子文件/子目录；支持一键在访达中定位并打开，亦可在此单独清理该项。
+  * **🔨 开发者编译构建中间件**：Xcode `DerivedData`、Swift 项目 `.build`、Python `__pycache__`（开发目录下最多 5 层）；
+* ⚖️ **默认只勾选无代价的项目**：DerivedData、项目 `.build`、Playwright 内核等清理后需要重新编译 / 下载的项会标出「清理代价」，默认不勾选；
+* ✋ **两步确认**：清理前显示将删除的项数与总大小，确认后才会执行；
+* 🛡️ **安全网关**：每一个待删除路径都要通过 `CleanerSafetyValidator` 校验，缓存根目录只清空内容、保留目录本身；
+* 🔍 **透明下钻与访达联动 (Detail Drill-down & Finder)**：点击任意项目右侧 `›` 即可无缝进入明细面板，查看绝对路径、清理影响说明以及体积最大的具体子文件/子目录；支持一键在访达中定位并打开，亦可在此单独清理该项。
 
 ---
 
 ### 📥 下载与安装
 
-1. 从 [Releases 页面](../../releases) 下载最新的 `MenuBarApps-v1.3.zip`；
+1. 从 [Releases 页面](../../releases) 下载最新的 `MenuBarApps-v1.4.0.zip`；
 2. 解压后将 `MenuBarApps.app` 拖移至系统 **“访达 -> 应用程序 (Applications)”**；
 3. **首次打开**：按住 `Control` 键点击应用图标，选择 **“打开”**，然后点击 **“仍要打开”** 即可。
 
@@ -90,27 +93,29 @@ On macOS (especially on MacBooks with camera notches), the menu bar easily runs 
 ### ✨ Key Features
 
 #### 1. 📱 App & Service Management
-* ⚡ **Live Status Item**: Minimalist icon displaying the count of background accessory apps.
-* ⌨️ **Global Shortcut**: `Option + Shift + A` (`⌥⇧A`) opens the dashboard anywhere.
+* ⚡ **Live Status Item**: Minimalist icon showing the number of running menu bar (accessory) apps. No polling while the panel is closed.
+* 🔁 **Launch at Login**: Toggle from the status item's right-click menu or the panel's `⋯` menu.
+* ⌨️ **Global Shortcut**: `⌥⇧A` by default, switchable to `⌃⌥A` / `⌃⌥M` / `⌃⌥Space`.
 * 🔍 **Smart Grouping**: Separates menu bar accessory apps, standard GUI window apps, and **Terminal/AI Services**.
-* 🤖 **Terminal & AI Agent Services**: Native detection for headless CLI models and TUI assistants (**Ollama, Claude Code, Kimi Code, Pi Agent, Aider**, etc.) with live memory reporting and one-click termination/restart.
-* 📊 **Live RSS Memory Footprint**: Kernel-level memory reporting with color-coded badges.
-* 🔄 **One-Click Restart**: Terminates and silently relaunches memory-bloated apps (like Maccy or Ollama) to flush RAM instantly.
+* 🤖 **Terminal & AI Agent Services**: Detects CLI models, TUI assistants (**Ollama, Claude Code, Codex, Gemini CLI, Kimi Code, Pi Agent, Aider**, etc.) and dev daemons; child processes are grouped into one row. One-click termination (restart for `ollama serve`).
+* 📊 **Activity Monitor–consistent Memory**: `phys_footprint`, including helper processes of multi-process apps; sortable by memory.
+* 🔄 **Reliable Restart**: Waits until the app has actually exited before relaunching; cancels with a notice if the app refuses to quit.
 * 🚀 **Clear Action Feedback**: Visual indicators for opening, restarting spinner, and dimming on quit.
 
 #### 2. 🧹 Safe Disk Cleaner
-* 🎯 **Strict Whitelist Scanning**: Only detects 100% safe-to-delete caches:
+* 🎯 **Strict Whitelist Scanning**: Only detects caches that apps regenerate automatically:
   * Browser media/image caches (Google Chrome, Safari, Edge, Firefox)
   * Package managers offline archives (Homebrew `.tar.gz`, pip, npm, Yarn, CocoaPods)
   * Developer build directories (Xcode `DerivedData`, Swift `.build`, `__pycache__`)
-* 🛡️ **Double-Lock Safety Gate**: Protected by `CleanerSafetyValidator`, preserving root directories and deleting only disposable contents.
-* 🔍 **Transparent Drill-down & Finder Integration**: Click `›` on any item to view its absolute path, safety rationale, and top largest files/subfolders; open directly in Finder or clean individually.
+* ⚖️ **Cost-aware Defaults & Confirmation**: Items that cost a rebuild or re-download (DerivedData, `.build`, Playwright) are labelled and unselected by default; every clean requires a second confirmation.
+* 🛡️ **Safety Gate**: Every path is checked by `CleanerSafetyValidator`; cache roots are emptied, never removed.
+* 🔍 **Transparent Drill-down & Finder Integration**: Click `›` on any item to view its absolute path, what cleaning it means, and the largest files/subfolders; open directly in Finder or clean individually.
 
 ---
 
 ### 📥 Download & Installation
 
-1. Download `MenuBarApps-v1.3.zip` from [Releases](../../releases);
+1. Download `MenuBarApps-v1.4.0.zip` from [Releases](../../releases);
 2. Unzip and drag `MenuBarApps.app` to your `/Applications` folder;
 3. **First launch**: Right-click (or Control-click) `MenuBarApps.app`, select **Open**, and click **Open Anyway**.
 

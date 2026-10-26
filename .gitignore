@@ -24,3 +24,6 @@ MenuBarApps_副本.app/
 # User-specific
 xcuserdata/
 DerivedData/
+
+# Build logs
+build.log

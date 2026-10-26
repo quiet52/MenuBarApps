@@ -18,6 +18,8 @@ public final class HistoryStore {
     private init() {}
     
     public func recordQuit(item: AppItem) {
+        // 终端 / AI 服务无法通过「启动」按钮恢复，不记入历史
+        guard !item.isCliProcess else { return }
         guard let path = item.bundleURL?.path else { return }
         var records = loadRawRecords()
         
@@ -82,6 +84,10 @@ public final class HistoryStore {
     public func getRecentQuitApps(excludingRunning runningBundleIds: Set<String>, excludingPaths: Set<String>) -> [AppItem] {
         let records = loadRawRecords()
         return records.compactMap { record in
+            // 兼容旧版本写入的终端服务记录：直接跳过
+            if record.bundleId.hasPrefix("cli.") {
+                return nil
+            }
             // 如果已经在运行中，则不展示在最近退出中
             if !record.bundleId.isEmpty && runningBundleIds.contains(record.bundleId) {
                 return nil

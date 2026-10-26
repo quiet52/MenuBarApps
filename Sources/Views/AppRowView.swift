@@ -5,6 +5,12 @@ struct AppRowView: View {
     let item: AppItem
     @ObservedObject var manager: AppManager
     
+    // 内存预警阈值（图形应用已合并 Helper 进程，阈值相应放宽）
+    private static let warnThreshold: UInt64 = 500 * 1024 * 1024
+    private static let dangerThreshold: UInt64 = 1536 * 1024 * 1024
+    
+    private var memoryBytes: UInt64 { item.memoryBytes ?? 0 }
+    
     var body: some View {
         let isOpening = manager.openingAppIds.contains(item.id)
         let isRestarting = manager.restartingAppIds.contains(item.id)
@@ -60,12 +66,13 @@ struct AppRowView: View {
                     
                     if let mem = item.memoryString {
                         Text("·")
-                        Text(mem)
-                            .font(.system(size: 10, weight: (item.memoryBytes ?? 0) > 200 * 1024 * 1024 ? .medium : .regular))
+                        Text(item.processCount > 1 ? "\(mem) (\(item.processCount) 进程)" : mem)
+                            .font(.system(size: 10, weight: memoryBytes > Self.warnThreshold ? .medium : .regular))
                             .foregroundColor(
-                                (item.memoryBytes ?? 0) > 500 * 1024 * 1024 ? .red :
-                                ((item.memoryBytes ?? 0) > 200 * 1024 * 1024 ? .orange : .secondary)
+                                memoryBytes > Self.dangerThreshold ? .red :
+                                (memoryBytes > Self.warnThreshold ? .orange : .secondary)
                             )
+                            .help(item.processCount > 1 ? "与活动监视器口径一致，已合并 \(item.processCount) 个相关进程（Helper / 子进程）" : "与活动监视器口径一致的内存占用")
                     }
                     
                     if let cmd = item.commandLine {
@@ -74,6 +81,8 @@ struct AppRowView: View {
                             .font(.system(size: 9, design: .monospaced))
                             .foregroundColor(.secondary)
                             .lineLimit(1)
+                            .truncationMode(.middle)
+                            .help(item.fullCommandLine ?? cmd)
                     }
                 }
                 .font(.system(size: 10))
@@ -85,23 +94,25 @@ struct AppRowView: View {
             // 快捷操作按钮 (具有即时点击状态反馈)
             HStack(spacing: 5) {
                 if item.isCliProcess {
-                    // 1. 重启按钮 (针对已知服务)
-                    Button(action: {
-                        manager.restartApp(item)
-                    }) {
-                        if isRestarting {
-                            ProgressView()
-                                .controlSize(.mini)
-                                .frame(width: 14, height: 14)
-                        } else {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 10))
+                    // 1. 重启按钮（仅限可由本工具重新拉起的服务，如 ollama serve）
+                    if item.canRestart {
+                        Button(action: {
+                            manager.restartApp(item)
+                        }) {
+                            if isRestarting {
+                                ProgressView()
+                                    .controlSize(.mini)
+                                    .frame(width: 14, height: 14)
+                            } else {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: 10))
+                            }
                         }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .disabled(isQuitting || isRestarting)
+                        .help("重启此服务（先结束再重新运行 ollama serve）")
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .disabled(isQuitting || isRestarting)
-                    .help("一键重启此服务")
                     
                     // 2. 终止按钮
                     Button(action: {
@@ -114,7 +125,7 @@ struct AppRowView: View {
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                     .disabled(isQuitting || isRestarting)
-                    .help("终止此后台/AI服务进程 (kill -15)")
+                    .help("终止进程：先发送 SIGTERM，3 秒内未退出则强制结束")
                 } else {
                     // 1. 打开按钮 (点击后变为“已唤起 ✓”)
                     Button(action: {
@@ -145,7 +156,7 @@ struct AppRowView: View {
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                     .disabled(isQuitting || isRestarting)
-                    .help("一键重启此应用（快速释放内存）")
+                    .help("重启此应用：等待其完全退出后再重新打开（释放内存）")
                     
                     // 3. 退出按钮 (点击后变为“退出中...”)
                     Button(action: {
@@ -172,8 +183,10 @@ struct AppRowView: View {
         }
         .contextMenu {
             if item.isCliProcess {
-                Button(action: { manager.restartApp(item) }) {
-                    Label("🔄 重启服务", systemImage: "arrow.clockwise")
+                if item.canRestart {
+                    Button(action: { manager.restartApp(item) }) {
+                        Label("重启服务", systemImage: "arrow.clockwise")
+                    }
                 }
                 
                 Button(action: { manager.quitApp(item) }) {
@@ -181,7 +194,25 @@ struct AppRowView: View {
                 }
                 
                 Button(role: .destructive, action: { manager.quitApp(item, force: true) }) {
-                    Label("强制杀掉 (SIGKILL)", systemImage: "bolt.fill")
+                    Label("强制结束 (SIGKILL)", systemImage: "bolt.fill")
+                }
+                
+                Divider()
+                
+                if let pid = item.pid {
+                    Button(action: { manager.copyToPasteboard(String(pid)) }) {
+                        Label("复制 PID", systemImage: "number")
+                    }
+                }
+                
+                if let cmd = item.fullCommandLine {
+                    Button(action: { manager.copyToPasteboard(cmd) }) {
+                        Label("复制完整命令行", systemImage: "doc.on.doc")
+                    }
+                }
+                
+                Button(action: { manager.showInFinder(item) }) {
+                    Label("在访达中显示可执行文件", systemImage: "folder")
                 }
             } else {
                 Button(action: { manager.activateApp(item) }) {
@@ -189,7 +220,7 @@ struct AppRowView: View {
                 }
                 
                 Button(action: { manager.restartApp(item) }) {
-                    Label("🔄 重启应用 (释放内存)", systemImage: "arrow.clockwise")
+                    Label("重启应用 (释放内存)", systemImage: "arrow.clockwise")
                 }
                 
                 Divider()

@@ -56,6 +56,18 @@ public enum CleanerSafetyValidator {
         ]
     }
     
+    /// 「清空内容但保留目录」模式的根目录校验：
+    /// 允许 DerivedData 根目录本身（它在精确禁止列表里，不能整体删除，但其中的子项可以清理），
+    /// 其余情况与 isSafeToDelete 相同。每个子项在删除前仍会单独经过 isSafeToDelete 校验。
+    public static func isSafeToClearContents(of url: URL) -> Bool {
+        let rawPath = url.standardizedFileURL.resolvingSymlinksInPath().path
+        let derivedData = "\(NSHomeDirectory())/Library/Developer/Xcode/DerivedData"
+        if rawPath == derivedData {
+            return true
+        }
+        return isSafeToDelete(url: url)
+    }
+
     /// 核心校验入口：判断目标 URL 是否 100% 符合安全删除白名单
     public static func isSafeToDelete(url: URL) -> Bool {
         // 1. 解析真实物理路径（阻断符号链接欺骗与 .. 路径穿越）

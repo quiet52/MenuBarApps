@@ -30,7 +30,7 @@ public struct DiskCleanerView: View {
             // 2. 缓存项目可滚动列表
             ScrollView {
                 VStack(spacing: 8) {
-                    if service.isScanning && service.items.isEmpty {
+                    if (service.isScanning || !service.hasScanned) && service.items.isEmpty {
                         scanningView
                     } else if service.items.isEmpty {
                         cleanEmptyView
@@ -71,7 +71,7 @@ public struct DiskCleanerView: View {
             
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
-                    Text("可安全释放:")
+                    Text("已选择:")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                     
@@ -89,6 +89,7 @@ public struct DiskCleanerView: View {
             Spacer()
             
             Button(action: {
+                service.isConfirmingClean = false
                 service.scan()
             }) {
                 if service.isScanning {
@@ -141,14 +142,26 @@ public struct DiskCleanerView: View {
                         .foregroundColor(.primary)
                         .lineLimit(1)
                     
-                    Text(item.subtitle)
-                        .font(.system(size: 9))
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
+                    if let cost = item.costNote {
+                        HStack(spacing: 3) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 8))
+                            Text(cost)
+                                .font(.system(size: 9))
+                                .lineLimit(1)
+                        }
+                        .foregroundColor(.orange)
+                    } else {
+                        Text(item.subtitle)
+                            .font(.system(size: 9))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
                 }
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .help(item.costNote.map { "\(item.subtitle)\n清理代价：\($0)" } ?? item.subtitle)
             
             Spacer()
             
@@ -204,7 +217,7 @@ public struct DiskCleanerView: View {
                 .foregroundColor(.green.opacity(0.8))
                 .padding(.top, 40)
             
-            Text("你的 Mac 极其干净！")
+            Text("没有发现可清理的缓存")
                 .font(.system(size: 13, weight: .medium))
             
             Text("未发现超过 1MB 的冗余大缓存。")
@@ -215,46 +228,75 @@ public struct DiskCleanerView: View {
         .frame(maxWidth: .infinity)
     }
     
-    // MARK: - 底部清理与全选
+    // MARK: - 底部清理与全选（两步确认，避免误删）
     private var bottomActionBar: some View {
-        HStack {
-            // 全选与反选
-            Button(action: {
-                if service.items.allSatisfy({ $0.isSelected }) {
-                    service.deselectAll()
-                } else {
-                    service.selectAll()
+        let selectedCount = service.selectedItems.count
+        return HStack(spacing: 8) {
+            if service.isConfirmingClean {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("将永久删除 \(selectedCount) 项")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("共 \(service.selectedBytesString)，不会进入废纸篓")
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary)
                 }
-            }) {
-                Text(service.items.allSatisfy({ $0.isSelected }) ? "取消全选" : "全选")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-            }
-            .buttonStyle(.plain)
-            .disabled(service.items.isEmpty || service.isCleaning)
-            
-            Spacer()
-            
-            // 一键清理按钮
-            Button(action: {
-                service.cleanSelected()
-            }) {
-                HStack(spacing: 6) {
-                    if service.isCleaning {
-                        ProgressView()
-                            .controlSize(.mini)
-                        Text("清理中...")
-                    } else {
-                        Image(systemName: "trash")
-                            .font(.system(size: 11))
-                        Text("一键清理 (\(service.selectedBytesString))")
+                
+                Spacer()
+                
+                Button("取消") {
+                    service.isConfirmingClean = false
+                }
+                .controlSize(.small)
+                
+                Button(action: {
+                    service.isConfirmingClean = false
+                    service.cleanSelected()
+                }) {
+                    Text("确认清理")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .controlSize(.small)
+            } else {
+                Menu {
+                    Button("只选推荐项（无代价）") { service.selectRecommended() }
+                    Button("全选") { service.selectAll() }
+                    Button("全不选") { service.deselectAll() }
+                } label: {
+                    Text("选择")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .disabled(service.items.isEmpty || service.isCleaning)
+                
+                Spacer()
+                
+                Button(action: {
+                    service.isConfirmingClean = true
+                }) {
+                    HStack(spacing: 6) {
+                        if service.isCleaning {
+                            ProgressView()
+                                .controlSize(.mini)
+                            Text("清理中...")
+                        } else {
+                            Image(systemName: "trash")
+                                .font(.system(size: 11))
+                            Text("清理所选 (\(service.selectedBytesString))")
+                        }
                     }
+                    .font(.system(size: 11, weight: .semibold))
                 }
-                .font(.system(size: 11, weight: .semibold))
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(service.selectedBytes == 0 || service.isCleaning || service.isScanning)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
-            .disabled(service.selectedBytes == 0 || service.isCleaning || service.isScanning)
+        }
+        .onChange(of: service.selectedBytes) { _ in
+            service.isConfirmingClean = false
         }
     }
 }
